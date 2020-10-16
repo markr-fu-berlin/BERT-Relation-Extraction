@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bert-relex-flask-back
+  labels:
+    app: bert-relex-flask-back
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bert-relex-flask-back
+  template:
+    metadata:
+      labels:
+        app: bert-relex-flask-back
+    spec:
+      containers:
+      - name: bert-relex-flask-back
+        image: registry.datexis.com/mkress/relex:latest
+        ports:
+          - name: client-port
+            containerPort: 5000
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+          - name: fsmount
+            mountPath: /fsmount
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+            memory: 10Gi
+      #nodeSelector:
+      #  gpu: k80
+      imagePullSecrets:
+      - name: private-registry-auth
+      volumes:
+        - name: fsmount
+          flexVolume:
+            driver: ceph.rook.io/rook
+            fsType: ceph
+            options:
+              fsName: home
+              clusterNamespace: rook-ceph
+

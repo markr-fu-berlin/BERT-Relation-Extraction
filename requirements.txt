@@ -1,0 +1,8 @@
+flask
+flask_cors
+torch
+spacy
+pandas
+seqeval
+matplotlib
+boto3
