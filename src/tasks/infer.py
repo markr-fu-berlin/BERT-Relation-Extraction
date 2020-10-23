@@ -25,8 +25,8 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
 logger = logging.getLogger('__file__')
 
 def load_pickle(filename):
-    completeName = os.path.join("./data/",\
-                                filename)
+    completeName = os.path.join("/fsmount/mkress/BERT-rel-ex",\
+                                filename)#TODO path
     with open(completeName, 'rb') as pkl_file:
         data = pickle.load(pkl_file)
     return data
@@ -41,6 +41,7 @@ class infer_from_trained(object):
         self.detect_entities = detect_entities
         
         if self.detect_entities:
+
             self.nlp = spacy.load("en_core_web_lg")
         else:
             self.nlp = None
@@ -84,6 +85,7 @@ class infer_from_trained(object):
         if self.cuda:
             self.net.cuda()
         start_epoch, best_pred, amp_checkpoint = load_state(self.net, None, None, self.args, load_best=False)
+        print("best_pred: ", best_pred)
         logger.info("Done!")
         
         self.e1_id = self.tokenizer.convert_tokens_to_ids('[E1]')
@@ -204,10 +206,10 @@ class infer_from_trained(object):
         with torch.no_grad():
             classification_logits = self.net(tokenized, token_type_ids=token_type_ids, attention_mask=attention_mask, Q=None,\
                                         e1_e2_start=e1_e2_start)
-            predicted = torch.softmax(classification_logits, dim=1).max(1)[1].item()
-        print("Sentence: ", sentence)
-        print("Predicted: ", self.rm.idx2rel[predicted].strip(), '\n')
-        return predicted
+            best_pred = torch.softmax(classification_logits, dim=1).max(1)
+            predicted = best_pred[1].item()
+            predicted_prob = best_pred[0].item()
+        return self.rm.idx2rel[predicted].strip(), predicted_prob
     
     def infer_sentence(self, sentence, detect_entities=False):
         if detect_entities:
@@ -215,11 +217,11 @@ class infer_from_trained(object):
             if sentences != None:
                 preds = []
                 for sent in sentences:
-                    pred = self.infer_one_sentence(sent)
-                    preds.append(pred)
+                    pred, prob = self.infer_one_sentence(sent)
+                    preds.append([sent, pred, prob])
                 return preds
         else:
-            return self.infer_one_sentence(sentence)
+            return [sentence, self.infer_one_sentence(sentence)]
 
 class FewRel(object):
     def __init__(self, args=None):

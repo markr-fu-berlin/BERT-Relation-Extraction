@@ -20,6 +20,10 @@ COPY ./data /home/data
 COPY ./Entrypoint.sh  /home/
 RUN chmod +x  /home/Entrypoint.sh
 
+RUN python -m spacy download en_core_web_lg
+
+WORKDIR /home
+
 ARG MAKE_TASTY_MODEL
 
 ENV ENV_MAKE_TASTY_MODEL=$MAKE_TASTY_MODEL

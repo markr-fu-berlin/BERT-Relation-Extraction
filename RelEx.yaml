@@ -29,7 +29,7 @@ spec:
           limits:
             nvidia.com/gpu: 1
             memory: 10Gi
-      #nodeSelector:
+      #nodeSelector: TODO
       #  gpu: k80
       imagePullSecrets:
       - name: private-registry-auth
