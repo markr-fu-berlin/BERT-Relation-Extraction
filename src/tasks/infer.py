@@ -214,12 +214,16 @@ class infer_from_trained(object):
     def infer_sentence(self, sentence, detect_entities=False):
         if detect_entities:
             sentences = self.get_annotated_sents(sentence)
+            logger.info("anotated sents: " + str(sentences))
             if sentences != None:
                 preds = []
                 for sent in sentences:
+                    #TODO check is enities overlap
                     pred, prob = self.infer_one_sentence(sent)
                     preds.append([sent, pred, prob])
                 return preds
+            else:
+                return [[sentence, None, None]]
         else:
             return [sentence, self.infer_one_sentence(sentence)]
 
