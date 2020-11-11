@@ -92,6 +92,18 @@ class infer_from_trained(object):
         self.e2_id = self.tokenizer.convert_tokens_to_ids('[E2]')
         self.pad_id = self.tokenizer.pad_token_id
         self.rm = load_pickle("relations.pkl")
+        self.overlap_pattern = re.compile('\[E1\]'
+                                         '([\w \s/,\(\)\[\]]*)'
+                                         '\[E2\]'
+                                         '([\w \s/,\(\)\[\]]*)'
+                                         '\[/E1\]'
+                                         '|'
+                                         '\[E2\]'
+                                         '([\w \s/,\(\)\[\]]*)'
+                                         '\[E1\]'
+                                         '([\w \s/,\(\)\[\]]*)'
+                                         '\[/E2\]'
+                                        )
         
     def get_all_ent_pairs(self, sent):
         if isinstance(sent, str):
@@ -214,16 +226,18 @@ class infer_from_trained(object):
     def infer_sentence(self, sentence, detect_entities=False):
         if detect_entities:
             sentences = self.get_annotated_sents(sentence)
-            logger.info("anotated sents: " + str(sentences))
             if sentences != None:
                 preds = []
                 for sent in sentences:
-                    #TODO check is enities overlap
-                    pred, prob = self.infer_one_sentence(sent)
-                    preds.append([sent, pred, prob])
-                return preds
-            else:
-                return [[sentence, None, None]]
+                    overlap = self.overlap_pattern.search(sent)
+                    if overlap is None:
+                        pred, prob = self.infer_one_sentence(sent)
+                        preds.append([sent, pred, prob])
+                    else:
+                        logger.info("overlap in : " + sent)
+                if len(preds) > 0:
+                    return preds
+            return [[sentence, None, None]]
         else:
             return [sentence, self.infer_one_sentence(sentence)]
 

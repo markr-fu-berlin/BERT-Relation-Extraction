@@ -16,9 +16,7 @@ import logging
 from operator import itemgetter
 
 #TODO set data-folder / model-folder from parameters
-#TODO python -m spacy download en_core_web_lg #( into ~/data/  /home/data, check if exists), curretly in fsmount
-#TODO start without exec
-#TODO ask about en_core_web_lg https://spacy.io/models/en#en_core_web_lg
+
 
 '''
 This fine-tunes the BERT model on SemEval, FewRel tasks
@@ -69,7 +67,7 @@ def make_app(argv, debug=False):
 
         for line in jsonInput["data"]:  # TODO make parallel? if yes need id
 
-            logger.info("sentence"+ str(line["sentext"]))
+            #logger.info("sentence"+ str(line["sentext"]))
             out = app.inferer.infer_sentence(line["sentext"], detect_entities=True)
             logger.info("out: " + str(out))
             line["sentence"], line["pred"], line["prob"] = find_best_prediction(out)
