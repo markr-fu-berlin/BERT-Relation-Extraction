@@ -51,7 +51,7 @@ def preprocess_semeval2010_8(args):
     '''
     Data preprocessing for SemEval2010 task 8 dataset
     '''
-    data_path = args.train_data #'./data/SemEval2010_task8_all_data/SemEval2010_task8_training/TRAIN_FILE.TXT'
+    data_path = args.train_data
     logger.info("Reading training file %s..." % data_path)
     with open(data_path, 'r', encoding='utf8') as f:
         text = f.readlines()
@@ -59,7 +59,7 @@ def preprocess_semeval2010_8(args):
     sents, relations, comments, blanks = process_text(text, 'train')
     df_train = pd.DataFrame(data={'sents': sents, 'relations': relations})
     
-    data_path = args.test_data #'./data/SemEval2010_task8_all_data/SemEval2010_task8_testing_keys/TEST_FILE_FULL.TXT'
+    data_path = args.test_data
     logger.info("Reading test file %s..." % data_path)
     with open(data_path, 'r', encoding='utf8') as f:
         text = f.readlines()
@@ -68,11 +68,11 @@ def preprocess_semeval2010_8(args):
     df_test = pd.DataFrame(data={'sents': sents, 'relations': relations})
     
     rm = Relations_Mapper(df_train['relations'])
-    save_as_pickle('relations.pkl', rm)
+    save_as_pickle('relations.pkl', rm, args.model_path)
     df_test['relations_id'] = df_test.progress_apply(lambda x: rm.rel2idx[x['relations']], axis=1)
     df_train['relations_id'] = df_train.progress_apply(lambda x: rm.rel2idx[x['relations']], axis=1)
-    save_as_pickle('df_train.pkl', df_train)
-    save_as_pickle('df_test.pkl', df_test)
+    save_as_pickle('df_train.pkl', df_train, args.model_path)
+    save_as_pickle('df_test.pkl', df_test, args.model_path)
     logger.info("Finished and saved!")
     
     return df_train, df_test, rm
@@ -218,7 +218,7 @@ def preprocess_fewrel(args, do_lower_case=True):
     df_test = pd.DataFrame(data={'sents': test_sents, 'labels': test_labels})
     
     rm = Relations_Mapper(list(df_train['labels'].unique()))
-    save_as_pickle('relations.pkl', rm)
+    save_as_pickle('relations.pkl', rm, args.model_path)
     df_train['labels'] = df_train.progress_apply(lambda x: rm.rel2idx[x['labels']], axis=1)
     
     return df_train, df_test
@@ -304,8 +304,8 @@ def load_dataloaders(args):
         lower_case = False
         model_name = 'BioBERT'
         
-    if os.path.isfile("./data/%s_tokenizer.pkl" % model_name):
-        tokenizer = load_pickle("%s_tokenizer.pkl" % model_name)
+    if os.path.isfile(args.model_path +("%s_tokenizer.pkl" % model_name)):
+        tokenizer = load_pickle("%s_tokenizer.pkl" % model_name, args.model_path)
         logger.info("Loaded tokenizer from pre-trained blanks model")
     else:
         logger.info("Pre-trained blanks tokenizer not found, initializing new tokenizer...")
@@ -316,21 +316,21 @@ def load_dataloaders(args):
             tokenizer = Tokenizer.from_pretrained(model, do_lower_case=False)
         tokenizer.add_tokens(['[E1]', '[/E1]', '[E2]', '[/E2]', '[BLANK]'])
 
-        save_as_pickle("%s_tokenizer.pkl" % model_name, tokenizer)
-        logger.info("Saved %s tokenizer at ./data/%s_tokenizer.pkl" %(model_name, model_name))
+        save_as_pickle("%s_tokenizer.pkl" % model_name, tokenizer, args.model_path)
+        logger.info("Saved %s tokenizer at " + args.model_path + ("%s_tokenizer.pkl" %(model_name, model_name)))
     
     e1_id = tokenizer.convert_tokens_to_ids('[E1]')
     e2_id = tokenizer.convert_tokens_to_ids('[E2]')
     assert e1_id != e2_id != 1
     
     if args.task == 'semeval':
-        relations_path = './data/relations.pkl'
-        train_path = './data/df_train.pkl'
-        test_path = './data/df_test.pkl'
+        relations_path = args.model_path + 'relations.pkl'
+        train_path = args.model_path + 'df_train.pkl'
+        test_path = args.model_path +'df_test.pkl'
         if os.path.isfile(relations_path) and os.path.isfile(train_path) and os.path.isfile(test_path):
-            rm = load_pickle('relations.pkl')
-            df_train = load_pickle('df_train.pkl')
-            df_test = load_pickle('df_test.pkl')
+            rm = load_pickle('relations.pkl', args.model_path)
+            df_train = load_pickle('df_train.pkl', args.model_path)
+            df_test = load_pickle('df_test.pkl', args.model_path)
             logger.info("Loaded preproccessed data.")
         else:
             df_train, df_test, rm = preprocess_semeval2010_8(args)

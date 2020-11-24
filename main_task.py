@@ -15,7 +15,13 @@ import sys
 import logging
 from operator import itemgetter
 
-#TODO set data-folder / model-folder from parameters
+#TODO test set data-folder / model-folder from parameters
+#TODO args in readme. docker, entrypoint
+#TODO change README of frontend
+# TODO input texoo possible
+# TODO output with all predictions possible
+#TODO rm copy model
+
 
 
 '''
@@ -33,7 +39,6 @@ def make_app(argv, debug=False):
     # @cross_origin(supports_credentials=True)
     # def login():
     #    return jsonify({'success': 'ok'})
-    logger.info("logger working")
     app.debug = debug
 
     parser = Parser().getParser()
@@ -46,14 +51,13 @@ def make_app(argv, debug=False):
         app.net = train_and_fit(args)
 
     if (args.infer == 1) and (args.task != 'fewrel'):
-        app.inferer = infer_from_trained(args, detect_entities=True)
+        app.inferer = infer_from_trained(args.model_path, detect_entities=True, args=args)
 
     if args.task == 'fewrel':
-        fewrel = FewRel(args)
+        fewrel = FewRel(args.model_path, args)
         meta_input, e1_e2_start, meta_labels, outputs = fewrel.evaluate()
 
     def find_best_prediction(out):
-        #[[sent, pred, prob],[sent, pred, prob]]
         best_pred = max(out, key=itemgetter(2))
         return best_pred[0], best_pred[1], best_pred[2]
 
@@ -63,7 +67,13 @@ def make_app(argv, debug=False):
         print("request.data: ", request.data)
         logger.info("request.data:" + str(request.data))
 
-        jsonInput = request.get_json(force=True)
+
+        dockerjsonInput = request.get_json(force=True)
+        #jsonInput = '{"data": [' \
+        #            '{"sentext": "I  love  Easter Sunday as a fashion moment because every church goer is ready to praise while dressed to the nines in their best Spring-inspired looks ."},' \
+         #           ' {"sentext": "Wear  them with basics and sparse accessories ."}' \
+        #            ']}'
+        #jsonInput = json.dumps(jsonInput)
 
         for line in jsonInput["data"]:  # TODO make parallel? if yes need id
 
@@ -80,6 +90,5 @@ def make_app(argv, debug=False):
 
 if __name__ == '__main__':
     argv = sys.argv[1:]
-
     app = make_app(argv, debug=False)
     app.run(host='0.0.0.0')

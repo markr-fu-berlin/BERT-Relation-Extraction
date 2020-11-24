@@ -9,5 +9,6 @@
 *.pkl
 *.bin
 /data/*
+/model/*
 /additional_models/biobert_v1.1_pubmed/*
 /__pycache__/*

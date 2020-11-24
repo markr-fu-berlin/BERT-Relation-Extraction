@@ -24,17 +24,17 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
                     datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 logger = logging.getLogger('__file__')
 
-def load_pickle(filename):
-    completeName = os.path.join("/fsmount/mkress/BERT-rel-ex",\
-                                filename)#TODO path
+def load_pickle(filename, model_path):
+    completeName = os.path.join(model_path,\
+                                filename)
     with open(completeName, 'rb') as pkl_file:
         data = pickle.load(pkl_file)
     return data
 
 class infer_from_trained(object):
-    def __init__(self, args=None, detect_entities=False):
+    def __init__(self, model_path, detect_entities=False, args=None):
         if args is None:
-            self.args = load_pickle("args.pkl")
+            self.args = load_pickle("args.pkl", model_path)
         else:
             self.args = args
         self.cuda = torch.cuda.is_available()
@@ -80,7 +80,7 @@ class infer_from_trained(object):
                                                  task='classification',\
                                                  n_classes_=self.args.num_classes)
         
-        self.tokenizer = load_pickle("%s_tokenizer.pkl" % model_name)
+        self.tokenizer = load_pickle("%s_tokenizer.pkl" % model_name, args.model_path)
         self.net.resize_token_embeddings(len(self.tokenizer))
         if self.cuda:
             self.net.cuda()
@@ -91,7 +91,7 @@ class infer_from_trained(object):
         self.e1_id = self.tokenizer.convert_tokens_to_ids('[E1]')
         self.e2_id = self.tokenizer.convert_tokens_to_ids('[E2]')
         self.pad_id = self.tokenizer.pad_token_id
-        self.rm = load_pickle("relations.pkl")
+        self.rm = load_pickle("relations.pkl", args.model_path)
         self.overlap_pattern = re.compile('\[E1\]'
                                          '([\w \s/,\(\)\[\]]*)'
                                          '\[E2\]'
@@ -242,9 +242,9 @@ class infer_from_trained(object):
             return [sentence, self.infer_one_sentence(sentence)]
 
 class FewRel(object):
-    def __init__(self, args=None):
+    def __init__(self, model_path, args=None):
         if args is None:
-            self.args = load_pickle("args.pkl")
+            self.args = load_pickle("args.pkl", model_path)
         else:
             self.args = args
         self.cuda = torch.cuda.is_available()
@@ -280,8 +280,8 @@ class FewRel(object):
                                             model_size='bert-base-uncased',
                                             task='fewrel')
         
-        if os.path.isfile('./data/%s_tokenizer.pkl' % model_name):
-            self.tokenizer = load_pickle("%s_tokenizer.pkl" % model_name)
+        if os.path.isfile(args.model_path + ('%s_tokenizer.pkl' % model_name)):
+            self.tokenizer = load_pickle("%s_tokenizer.pkl" % model_name, args.model_path)
             logger.info("Loaded tokenizer from saved file.")
         else:
             logger.info("Saved tokenizer not found, initializing new tokenizer...")
@@ -291,8 +291,8 @@ class FewRel(object):
             else:
                 self.tokenizer = Tokenizer.from_pretrained(model, do_lower_case=False)
             self.tokenizer.add_tokens(['[E1]', '[/E1]', '[E2]', '[/E2]', '[BLANK]'])
-            save_as_pickle("%s_tokenizer.pkl" % model_name, self.tokenizer)
-            logger.info("Saved %s tokenizer at ./data/%s_tokenizer.pkl" %(model_name, model_name))
+            save_as_pickle("%s_tokenizer.pkl" % model_name, self.tokenizer, args.model_path)
+            logger.info("Saved %s tokenizer at " + args.model_path + ("%s_tokenizer.pkl" %(model_name, model_name)))
             
         
         self.net.resize_token_embeddings(len(self.tokenizer))
@@ -302,8 +302,8 @@ class FewRel(object):
             self.net.cuda()
         
         if self.args.use_pretrained_blanks == 1:
-            logger.info("Loading model pre-trained on blanks at ./data/test_checkpoint_%d.pth.tar..." % args.model_no)
-            checkpoint_path = "./data/test_checkpoint_%d.pth.tar" % self.args.model_no
+            logger.info("Loading model pre-trained on blanks at " + args.model_path + ("test_checkpoint_%d.pth.tar..." % args.model_no))
+            checkpoint_path = args.model_path + ("/test_checkpoint_%d.pth.tar" % self.args.model_no)
             checkpoint = torch.load(checkpoint_path)
             model_dict = self.net.state_dict()
             pretrained_dict = {k: v for k, v in checkpoint['state_dict'].items() if k in model_dict.keys()}

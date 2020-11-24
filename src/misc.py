@@ -9,15 +9,15 @@ import pickle
 import re
 from itertools import permutations
 
-def load_pickle(filename):
-    completeName = os.path.join("./data/",\
+def load_pickle(filename, model_path):
+    completeName = os.path.join(model_path ,\
                                 filename)
     with open(completeName, 'rb') as pkl_file:
         data = pickle.load(pkl_file)
     return data
 
-def save_as_pickle(filename, data):
-    completeName = os.path.join("./data/",\
+def save_as_pickle(filename, data, model_path):
+    completeName = os.path.join(model_path ,\
                                 filename)
     with open(completeName, 'wb') as output:
         pickle.dump(data, output)

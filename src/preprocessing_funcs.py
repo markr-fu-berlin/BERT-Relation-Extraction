@@ -192,9 +192,9 @@ class pretrain_dataset(Dataset):
             lower_case = False
             model_name = 'BioBERT'
         
-        tokenizer_path = './data/%s_tokenizer.pkl' % (model_name)
+        tokenizer_path = args.model_path + ('%s_tokenizer.pkl' % (model_name))
         if os.path.isfile(tokenizer_path):
-            self.tokenizer = load_pickle('%s_tokenizer.pkl' % (model_name))
+            self.tokenizer = load_pickle('%s_tokenizer.pkl' % (model_name), args.model_path)
             logger.info("Loaded tokenizer from saved path.")
         else:
             if args.model_no == 2:
@@ -203,8 +203,8 @@ class pretrain_dataset(Dataset):
             else:
                 self.tokenizer = Tokenizer.from_pretrained(model, do_lower_case=False)
             self.tokenizer.add_tokens(['[E1]', '[/E1]', '[E2]', '[/E2]', '[BLANK]'])
-            save_as_pickle("%s_tokenizer.pkl" % (model_name), self.tokenizer)
-            logger.info("Saved %s tokenizer at ./data/%s_tokenizer.pkl" % (model_name, model_name))
+            save_as_pickle("%s_tokenizer.pkl" % (model_name), self.tokenizer, args.model_path)
+            logger.info(("Saved %s tokenizer at" + args.model_path + "%s_tokenizer.pkl") % (model_name, model_name))
         
         e1_id = self.tokenizer.convert_tokens_to_ids('[E1]')
         e2_id = self.tokenizer.convert_tokens_to_ids('[E2]')
@@ -401,7 +401,7 @@ class Pad_Sequence():
 
 def load_dataloaders(args, max_length=50000):
     
-    if not os.path.isfile("./data/D.pkl"):
+    if not os.path.isfile(args.model_path + "D.pkl"):
         logger.info("Loading pre-training data...")
         with open(args.pretrain_data, "r", encoding="utf8") as f:
             text = f.readlines()
@@ -422,11 +422,11 @@ def load_dataloaders(args, max_length=50000):
             D.extend(create_pretraining_corpus(text_chunk, nlp, window_size=40))
             
         logger.info("Total number of relation statements in pre-training corpus: %d" % len(D))
-        save_as_pickle("D.pkl", D)
-        logger.info("Saved pre-training corpus to %s" % "./data/D.pkl")
+        save_as_pickle("D.pkl", D, args.model_path)
+        logger.info("Saved pre-training corpus to %s" % (args.model_path + "D.pkl"))
     else:
         logger.info("Loaded pre-training data from saved file")
-        D = load_pickle("D.pkl")
+        D = load_pickle("D.pkl", args.model_path)
         
     train_set = pretrain_dataset(args, D, batch_size=args.batch_size)
     train_length = len(train_set)
