@@ -2,7 +2,7 @@
 import re
 
 
-if __name__ == '__main__':
+def testoverlap():
     noverlap =  ['[E1]One[/E1] [E2]of the few items in our[/E2]  gym to cocktails , today  available in a plethora of styles and colours .',
                 '[E1]One[/E1] of the [E2]few items in our  gym to cocktails[/E2] , today  available in a plethora of styles and colours .',
                 '[E1]One[/E1] of the few items in our  gym to cocktails , today  available in a plethora of [E2]styles and colours[/E2] .',
@@ -71,3 +71,20 @@ if __name__ == '__main__':
         else:
             print("true for: ", sent)
             print(overlap)
+
+import json
+def testjson():
+    jsonInput = '{ "options": {"returnAllPredictions": true}, ' \
+                '"data": [' \
+                '{"sentext": "I  love  Easter Sunday as a fashion moment because every church goer is ready to praise while dressed to the nines in their best Spring-inspired looks ."},' \
+                ' {"sentext": "Wear  them with basics and sparse accessories ."}' \
+                ']}'
+
+    jsonI = json.loads(jsonInput)
+
+    print(jsonI)
+
+    print(jsonI["options"])
+
+if __name__ == '__main__':
+    testjson()

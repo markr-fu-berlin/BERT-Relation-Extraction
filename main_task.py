@@ -13,15 +13,13 @@ from flask import Flask, jsonify, request, abort
 from flask_cors import CORS, cross_origin
 import sys
 import logging
+import json
 from operator import itemgetter
 
-#TODO test set data-folder / model-folder from parameters
-#TODO args in readme. docker, entrypoint
 #TODO change README of frontend
 # TODO input texoo possible
-# TODO output with all predictions possible
-#TODO rm copy model
-
+# TODO return options?
+# TODO add options to frontend
 
 
 '''
@@ -61,6 +59,32 @@ def make_app(argv, debug=False):
         best_pred = max(out, key=itemgetter(2))
         return best_pred[0], best_pred[1], best_pred[2]
 
+    def get_best_predictions(data):
+        for line in data:
+            #logger.info("sentence"+ str(line["sentext"]))
+            out = app.inferer.infer_sentence(line["sentext"], detect_entities=True)
+            logger.info("out: " + str(out))
+            line["sentence"], line["pred"], line["prob"] = find_best_prediction(out)
+        return data
+
+    def get_all_predictions(data):
+        new_data = []
+        logger.info("data: " + str(data))
+        for line in data:
+            logger.info("sentence" + str(line["sentext"]))
+            out = app.inferer.infer_sentence(line["sentext"], detect_entities=True)
+            logger.info("out: " + str(out))
+
+            if len(out) == 0:
+                line["sentence"], line["pred"], line["prob"] = None, None, None
+                new_data.append(line)
+            else:
+                for pred in out:
+                    newline = line
+                    newline["sentence"], newline["pred"], newline["prob"] = pred[0], pred[1], pred[2]
+                    new_data.append(newline)
+        return new_data
+
 
     @app.route('/api/importjson', methods=['POST'])
     def get_input_importjson():
@@ -68,22 +92,21 @@ def make_app(argv, debug=False):
         logger.info("request.data:" + str(request.data))
 
 
-        dockerjsonInput = request.get_json(force=True)
-        #jsonInput = '{"data": [' \
-        #            '{"sentext": "I  love  Easter Sunday as a fashion moment because every church goer is ready to praise while dressed to the nines in their best Spring-inspired looks ."},' \
-         #           ' {"sentext": "Wear  them with basics and sparse accessories ."}' \
-        #            ']}'
-        #jsonInput = json.dumps(jsonInput)
+        #jsonInput = request.get_json(force=True)
+        jsonInput = '{ "options": {"returnAllPredictions": true},' \
+                    '"data": [' \
+                    '{"sentext": "I  love  Easter Sunday as a fashion moment because every church goer is ready to praise while dressed to the nines in their best Spring-inspired looks ."},' \
+                   ' {"sentext": "Wear  them with basics and sparse accessories ."}' \
+                    ']}'
 
-        for line in jsonInput["data"]:  # TODO make parallel? if yes need id
+        jsonInput = json.loads(jsonInput)
 
-            #logger.info("sentence"+ str(line["sentext"]))
-            out = app.inferer.infer_sentence(line["sentext"], detect_entities=True)
-            logger.info("out: " + str(out))
-            line["sentence"], line["pred"], line["prob"] = find_best_prediction(out)
+        if jsonInput["options"]["returnAllPredictions"]:
+            data = get_all_predictions(jsonInput["data"])
+        else:
+            data = get_best_predictions(jsonInput["data"])
 
-        json = make_result_json(jsonInput)
-        return json
+        return make_result_json(data)
 
     return app
 

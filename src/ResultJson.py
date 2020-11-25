@@ -108,7 +108,7 @@ def get_annotations(sentence, sentext):
     else:
         return [None,None,None], [None,None,None]
 
-def make_result_json(Input_json):
+def make_result_json(data):
     #{"data":[
     #    {"sentext": "original sentence",
     #     "sentence": "anotated sentece",
@@ -117,7 +117,7 @@ def make_result_json(Input_json):
     #     }
     #]}
     jsonlines = []
-    for line in Input_json["data"]:
+    for line in data:
         length = len(line["sentext"])
         text = line["sentext"]
         thisClass = line["pred"]
@@ -133,5 +133,5 @@ def make_result_json(Input_json):
         json_line = jsonline(length, document_ref, uID, text, begin, thisClass, type, source, confidence, rel_args)
         jsonlines.append(json_line)
 
-    jsonObj = '{"data":' + json.dumps( jsonlines) + '}'
+    jsonObj = '{"data":' + json.dumps(jsonlines) + '}'
     return jsonObj
