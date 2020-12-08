@@ -6,28 +6,8 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
                     datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 logger = logging.getLogger('__file__')
 
-
-def jsonline(length, document_ref, uID, text, begin, thisClass, type, source, confidence, rel_args):
-    document_ref = 1
-    begin = 0
-
-    line = {'length': length,
-            'documentRef': document_ref,
-            'uid': uID,
-            'text': text,
-            'begin': begin,
-            'class': thisClass,                                     #relation type zb mention_annotaion,
-            'type': type,
-            "tokens": None,
-            "empty": None,
-            "language":  None,
-            "sentences":  None,
-            'source': source,
-            'id': None,
-            "title": "Output for bert-relex-api.demo.datexis.com",
-
-            "annotations": [
-                {
+def new_annotation(document_ref, confidence, rel_args):
+    annotation = {
                     "length": None,
                     "documentRef": document_ref,
                     "uid": None,
@@ -48,7 +28,7 @@ def jsonline(length, document_ref, uID, text, begin, thisClass, type, source, co
                             "begin": rel_args[0][2],
                             "classs": "relationArgument",
                             "type": "GENERIC",
-                            "source": "GOLD",
+                            "source": None,
                             "confidence": None,
                             "isActive": False
                         },
@@ -60,16 +40,45 @@ def jsonline(length, document_ref, uID, text, begin, thisClass, type, source, co
                             "begin": rel_args[1][2],
                             "classs": "relationArgument",
                             "type": "GENERIC",
-                            "source": "GOLD",
+                            "source": None,
                             "confidence": None,
                             "isActive": False
                         }
                     ]
                 }
+
+    return annotation
+
+
+def jsonline(length, document_ref, uID, text, begin, thisClass, type, source, confidence, rel_args):
+    document_ref = 1
+    begin = 0
+
+    annotation = new_annotation(document_ref, confidence, rel_args)
+
+    line = {'length': length,
+            'documentRef': document_ref,
+            'uid': uID,
+            'text': text,
+            'begin': begin,
+            'class': thisClass,                                     #relation type zb mention_annotaion,
+            'type': type,
+            "tokens": None,
+            "empty": None,
+            "language":  None,
+            "sentences":  None,
+            'source': source,
+            'id': None,
+            "title": "Output for bert-relex-api.demo.datexis.com",
+
+            "annotations": [
+                annotation
             ]
            }
 
     return line
+
+
 
 def find_E1_E2(sentence):
     split_on_E1 = sentence.split("[E1]")
@@ -108,14 +117,16 @@ def get_annotations(sentence, sentext):
     else:
         return [None,None,None], [None,None,None]
 
-def make_result_json(data):
-    #{"data":[
+
+
+def make_result_json_from_simple(data):
+    # {"data":[
     #    {"sentext": "original sentence",
     #     "sentence": "anotated sentece",
     #     "pred": "class name",
     #     "prob": 0.087
     #     }
-    #]}
+    # ]}
     jsonlines = []
     for line in data:
         length = len(line["sentext"])
@@ -133,5 +144,26 @@ def make_result_json(data):
         json_line = jsonline(length, document_ref, uID, text, begin, thisClass, type, source, confidence, rel_args)
         jsonlines.append(json_line)
 
-    jsonObj = '{"data":' + json.dumps(jsonlines) + '}'
+        return '{"data":' + json.dumps(jsonlines) + '}'
+
+def make_result_json_from_texoo(data):
+    for line in data:
+        rel_args = get_annotations(line["sentence"], line["text"])
+        annotation = new_annotation(line["document_ref"], line["prob"], rel_args)
+        line["thisClass"] = line["pred"]
+        line["annotations"].append(annotation)
+
+        line.pop("sentence")
+        line.pop("pred")
+        line.pop("prob")
+
+    return json.dumps(data)
+
+def make_result_json(data, inputtype = "simplejson"):
+    if inputtype == "simplejson":
+        jsonObj =  make_result_json_from_simple(data)
+
+    elif inputtype == "texoo":
+        jsonObj = make_result_json_from_texoo(data)
+
     return jsonObj

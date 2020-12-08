@@ -16,10 +16,12 @@ import logging
 import json
 from operator import itemgetter
 
-#TODO change README of frontend
-# TODO input texoo possible
+# TODO change README of frontend
 # TODO return options?
 # TODO add options to frontend
+# TODO put all annotations in one texoo?
+# TODO texoo input better?
+# tODO remove cases where entitys are switched?
 
 
 '''
@@ -59,31 +61,87 @@ def make_app(argv, debug=False):
         best_pred = max(out, key=itemgetter(2))
         return best_pred[0], best_pred[1], best_pred[2]
 
-    def get_best_predictions(data):
+    def get_best_predictions(data, inputtype="simplejson"):
+        if inputtype == "simplejson":
+            sen_name = "sentext"
+        elif inputtype == "texoo":
+            sen_name = "text"
+
         for line in data:
-            #logger.info("sentence"+ str(line["sentext"]))
-            out = app.inferer.infer_sentence(line["sentext"], detect_entities=True)
+            #logger.info("sentence"+ str(line[sen_name]))
+            out = app.inferer.infer_sentence(line[sen_name], detect_entities=True)
             logger.info("out: " + str(out))
             line["sentence"], line["pred"], line["prob"] = find_best_prediction(out)
         return data
 
-    def get_all_predictions(data):
+    def get_all_predictions(data, inputtype="simplejson"):
         new_data = []
-        logger.info("data: " + str(data))
+        if inputtype == "simplejson":
+            sen_name = "sentext"
+        elif inputtype == "texoo":
+            sen_name = "text"
+
         for line in data:
-            logger.info("sentence" + str(line["sentext"]))
-            out = app.inferer.infer_sentence(line["sentext"], detect_entities=True)
+            logger.info("sentence" + str(line[sen_name]))
+            out = app.inferer.infer_sentence(line[sen_name], detect_entities=True)
             logger.info("out: " + str(out))
 
             if len(out) == 0:
+                logger.info("test")
                 line["sentence"], line["pred"], line["prob"] = None, None, None
                 new_data.append(line)
             else:
                 for pred in out:
+                    logger.info("pred : " + str(pred))
                     newline = line
                     newline["sentence"], newline["pred"], newline["prob"] = pred[0], pred[1], pred[2]
                     new_data.append(newline)
         return new_data
+
+
+    # takes new texoo json for each line
+    # ignores annotations and generates new ones
+    @app.route('/api/importtexoo', methods=['POST'])
+    def get_input_importtexoo():
+        print("request.data: ", request.data)
+        logger.info("request.data:" + str(request.data))
+
+        #jsonInput = request.get_json(force=True)
+        jsonInput = { "options": {"returnAllPredictions": True},
+                    "data": [
+                        {'length': 12,
+                        'documentRef': 2,
+                        'uid': 123,
+                        'text': "I  love  Easter Sunday as a fashion moment because every church goer is ready to praise while dressed to the nines in their best Spring-inspired looks .",
+                        'begin': 0,
+                        'class': "thisClass",
+                        'type': "type",
+                        "tokens": None,
+                        "empty": None,
+                        "language": "ENg",
+                        "sentences": None,
+                        'source': "source",
+                        'id': None,
+                        "title": "Output for bert-relex-api.demo.datexis.com",
+
+                        "annotations": [
+                            {"relationArguments": [
+                                {"arg1": "blq"},{"arg2": "ble"}]},
+                            {"relationArguments": [
+                                {"arg1": "blj"}, {"arg2": "blg"}]}
+                            ]
+                        }
+                    ]
+                 }
+
+        jsonInput = json.loads(jsonInput)
+
+        if jsonInput["options"]["returnAllPredictions"]:
+            data = get_all_predictions(jsonInput["data"], "texoo")
+        else:
+            data = get_best_predictions(jsonInput["data"], "texoo")
+
+        return make_result_json(data, "texoo")
 
 
     @app.route('/api/importjson', methods=['POST'])
@@ -98,7 +156,6 @@ def make_app(argv, debug=False):
                     '{"sentext": "I  love  Easter Sunday as a fashion moment because every church goer is ready to praise while dressed to the nines in their best Spring-inspired looks ."},' \
                    ' {"sentext": "Wear  them with basics and sparse accessories ."}' \
                     ']}'
-
         jsonInput = json.loads(jsonInput)
 
         if jsonInput["options"]["returnAllPredictions"]:
