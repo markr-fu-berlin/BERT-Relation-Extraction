@@ -39,6 +39,8 @@ docker build -t <registry-name> --build-arg train=0 --build-arg infer=1 --build-
 docker push <registry-name>
 ```
 
+Then push to your registry.
+
 Start the kubernetes deployment and service.
 ```bash
 kubectl create -f RelEx.yaml 
@@ -64,3 +66,7 @@ and inpute the senteces marked like this:
 ```bash
 The surprise [E1]visit[/E1] caused a [E2]frenzy[/E2] on the already chaotic trading floor.
 ```
+
+This service outputs the sentences and annotation in texoo-format, but split into sentences. If there are multiple annotations for the same sentence, the sentence will be returned multiple times. If this needs changing, change the "get_all_predictions" method in main_task.py accordingly.
+
+There is the option to input sentences in texoo-format, but there is currently no way to do this with the frontend. Also every input-sentence needs its own entry in the "data"-list of the input.

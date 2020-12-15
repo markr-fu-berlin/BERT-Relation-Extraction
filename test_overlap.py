@@ -86,5 +86,14 @@ def testjson():
 
     print(jsonI["options"])
 
+def playSplit():
+    sentext = "As you can easily notice the second block of text looks more realistic. "
+    E2 = "the second block of text looks more realistic ."
+    E2_start = len(sentext.split(E2)[0])
+    print(E2_start)
+    if E2_start > len(E2):
+        E2_start = len(sentext.split(E2[:-2])[0])
+    print (E2_start)
+
 if __name__ == '__main__':
-    testjson()
+    playSplit()

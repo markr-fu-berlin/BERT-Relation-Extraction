@@ -14,14 +14,10 @@ from flask_cors import CORS, cross_origin
 import sys
 import logging
 import json
+import copy
 from operator import itemgetter
 
-# TODO change README of frontend
-# TODO return options?
-# TODO add options to frontend
-# TODO put all annotations in one texoo?
-# TODO texoo input better?
-# tODO remove cases where entitys are switched?
+# TODO remove cases where entitys are switched?
 
 
 '''
@@ -93,9 +89,12 @@ def make_app(argv, debug=False):
             else:
                 for pred in out:
                     logger.info("pred : " + str(pred))
-                    newline = line
+                    newline = copy.deepcopy(line)
                     newline["sentence"], newline["pred"], newline["prob"] = pred[0], pred[1], pred[2]
+                    logger.info("newline : " + str(newline))
                     new_data.append(newline)
+
+        logger.info("new _DATA : \n" + str(new_data)+ "\n")
         return new_data
 
 
@@ -106,35 +105,34 @@ def make_app(argv, debug=False):
         print("request.data: ", request.data)
         logger.info("request.data:" + str(request.data))
 
-        #jsonInput = request.get_json(force=True)
-        jsonInput = { "options": {"returnAllPredictions": True},
-                    "data": [
-                        {'length': 12,
-                        'documentRef': 2,
-                        'uid': 123,
-                        'text': "I  love  Easter Sunday as a fashion moment because every church goer is ready to praise while dressed to the nines in their best Spring-inspired looks .",
-                        'begin': 0,
-                        'class': "thisClass",
-                        'type': "type",
-                        "tokens": None,
-                        "empty": None,
-                        "language": "ENg",
-                        "sentences": None,
-                        'source': "source",
-                        'id': None,
-                        "title": "Output for bert-relex-api.demo.datexis.com",
+        jsonInput = request.get_json(force=True)
+        # jsonInput = { "options": {"returnAllPredictions": False},
+        #             "data": [
+        #                 {'length': 12,
+        #                 'documentRef': 2,
+        #                 'uid': 123,
+        #                 'text': "I  love  Easter Sunday as a fashion moment because every church goer is ready to praise while dressed to the nines in their best Spring-inspired looks .",
+        #                 'begin': 0,
+        #                 'class': "thisClass",
+        #                 'type': "type",
+        #                 "tokens": None,
+        #                 "empty": None,
+        #                 "language": "ENg",
+        #                 "sentences": None,
+        #                 'source': "source",
+        #                 'id': None,
+        #                 "title": "Output for bert-relex-api.demo.datexis.com",
+        #
+        #                 "annotations": [
+        #                     {"relationArguments": [
+        #                         {"arg1": "blq"},{"arg2": "ble"}]},
+        #                     {"relationArguments": [
+        #                         {"arg1": "blj"}, {"arg2": "blg"}]}
+        #                     ]
+        #                 }
+        #             ]
+        #          }
 
-                        "annotations": [
-                            {"relationArguments": [
-                                {"arg1": "blq"},{"arg2": "ble"}]},
-                            {"relationArguments": [
-                                {"arg1": "blj"}, {"arg2": "blg"}]}
-                            ]
-                        }
-                    ]
-                 }
-
-        jsonInput = json.loads(jsonInput)
 
         if jsonInput["options"]["returnAllPredictions"]:
             data = get_all_predictions(jsonInput["data"], "texoo")
@@ -150,13 +148,13 @@ def make_app(argv, debug=False):
         logger.info("request.data:" + str(request.data))
 
 
-        #jsonInput = request.get_json(force=True)
-        jsonInput = '{ "options": {"returnAllPredictions": true},' \
-                    '"data": [' \
-                    '{"sentext": "I  love  Easter Sunday as a fashion moment because every church goer is ready to praise while dressed to the nines in their best Spring-inspired looks ."},' \
-                   ' {"sentext": "Wear  them with basics and sparse accessories ."}' \
-                    ']}'
-        jsonInput = json.loads(jsonInput)
+        jsonInput = request.get_json(force=True)
+        #jsonInput = '{ "options": {"returnAllPredictions": false},' \
+        #            '"data": [' \
+        #            '{"sentext": "I  love  Easter Sunday as a fashion moment because every church goer is ready to praise while dressed to the nines in their best Spring-inspired looks ."},' \
+        #           ' {"sentext": "Wear  them with basics and sparse accessories ."}' \
+        #            ']}'
+        #jsonInput = json.loads(jsonInput)
 
         if jsonInput["options"]["returnAllPredictions"]:
             data = get_all_predictions(jsonInput["data"])
